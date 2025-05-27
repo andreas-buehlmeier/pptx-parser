@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PPTX Picture Description Extractor</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+        img.logo {
+            width: 240px;
+            margin-bottom: 1rem;
+        }
+        input[type="file"] {
+            margin: 1rem 0;
+        }
+        button {
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            background-color: #4CAF50;
+            color: white;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        ul {
+            text-align: left;
+            margin-top: 1.5rem;
+        }
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+        p.error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/static/logo.png" alt="Logo" class="logo">
+        <h1>Upload a PowerPoint File</h1>
+       <form id="uploadForm" action="/upload-form" enctype="multipart/form-data" method="post">
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" name="file" accept=".pptx" style="display:none;" required>
+
+    <!-- Drag and drop area -->
+    <div id="dropArea" style="
+        border: 2px dashed #ccc;
+        border-radius: 10px;
+        padding: 2rem;
+        background-color: #f0f0f0;
+        cursor: pointer;
+        margin-bottom: 1rem;
+    ">
+        <p id="dropText">Drag & Drop your .pptx file here, or click to select</p>
+    </div>
+            <br>
+            <button type="submit">Process File</button>
+        </form>
+        
+        <form action="/download-report" method="get" style="margin-top: 1rem;">
+            <button type="submit">Download Report</button>
+        </form>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        {% if descriptions %}
+            <h2>Extracted Descriptions by Slide:</h2>
+            {% for slide in descriptions %}
+                <h3>Slide {{ slide.slide }}</h3>
+                <ul>
+                    {% for desc in slide.descriptions %}
+                        <li>{{ desc }}</li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        {% endif %}
+    <!-- LOG CONTAINER -->
+<div style="margin-top: 2rem; width: 100%; max-width: 600px;">
+    <h2 style="text-align: left; color: #555;">Live Log Output</h2>
+    <div id="logs"
+         style="height: 300px; overflow-y: auto; text-align: left; background: #1e1e1e; color: #e0e0e0; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; border: 1px solid #333;">
+        reading logs...
+    </div>
+</div>
+
+<script>
+    var ws_log = new WebSocket("ws://127.0.0.1:8000/ws/log");
+
+    ws_log.onmessage = function (event) {
+        var logs = document.getElementById("logs");
+        logs.innerHTML = event.data;
+    };
+
+    const dropArea = document.getElementById("dropArea");
+    const fileInput = document.getElementById("fileInput");
+    const form = document.getElementById("uploadForm");
+
+    // Trigger click when drop area is clicked
+    dropArea.addEventListener("click", () => fileInput.click());
+
+    // Highlight drop area on drag
+    dropArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropArea.style.backgroundColor = "#e6f7ff";
+    });
+
+    // Unhighlight on drag leave
+    dropArea.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dropArea.style.backgroundColor = "#f0f0f0";
+    });
+
+    // Handle drop
+    dropArea.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropArea.style.backgroundColor = "#f0f0f0";
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+        if (file.name.endsWith(".pptx")) {
+            // Set the file to the hidden input
+            fileInput.files = files;
+
+            // Manually display the file name
+            dropText.textContent = `✅ Selected: ${file.name}`;
+        } else {
+            alert("Only .pptx files are allowed.");
+        }
+    }
+});
+
+    // Show file name when file is selected from dialog
+    fileInput.addEventListener("change", (e) => {
+        const file = fileInput.files[0];
+        if (file) {
+            dropText.textContent = `✅ Selected: ${file.name}`;
+        }
+    });
+
+
+</script>
+
+</body>
+</html>
