@@ -106,12 +106,17 @@
 </div>
 
 <script>
-    var ws_log = new WebSocket("ws://127.0.0.1:8000/ws/log");
+    const wsProtocol = location.protocol === "https:" ? "wss" : "ws";
+  const wsHost = location.hostname;
+  const wsPort = location.port;
+  const wsUrl = `${wsProtocol}://${wsHost}:${wsPort}/ws/log`;
 
-    ws_log.onmessage = function (event) {
-        var logs = document.getElementById("logs");
-        logs.innerHTML = event.data;
-    };
+  const ws_log = new WebSocket(wsUrl);
+
+  ws_log.onmessage = function (event) {
+    const logs = document.getElementById("logs");
+    logs.innerHTML = event.data;
+  };
 
     const dropArea = document.getElementById("dropArea");
     const fileInput = document.getElementById("fileInput");

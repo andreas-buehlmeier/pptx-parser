@@ -236,27 +236,22 @@ import threading
 import time
 import socket
 
-def wait_for_server(host, port, timeout=10):
-    start = time.time()
-    while time.time() - start < timeout:
-        try:
-            with socket.create_connection((host, port), timeout=1):
-                return True
-        except OSError:
-            time.sleep(0.5)
-    return False
-
-def open_browser_when_ready():
-    if wait_for_server("127.0.0.1", 8000):
-        webbrowser.open("http://127.0.0.1:8000")
-    else:
-        print("Server didn't start in time.")
-
 if __name__ == "__main__":
-    threading.Thread(target=open_browser_when_ready).start()
-    uvicorn.run(
-        "main:app", 
-        host="127.0.0.1", 
-        port=8000
-        )
+    config = uvicorn.Config(app=app, reload=True)
+    server = uvicorn.Server(config=config)
+    (sock := socket.socket()).bind(("127.0.0.1", 0))
+    thread = threading.Thread(target=server.run, kwargs={"sockets": [sock]})
+    thread.start()  # non-blocking call
+
+    # wait until the server started
+    while not server.started:
+        time.sleep(0.001)
+
+    # after the server started, let's figure out the address and the port
+    address, port = sock.getsockname()
+    print(f"HTTP server is now running on http://{address}:{port}")
+
+    # open the default webbrowser
+    open_string = f'http://{address}:{port}'
+    webbrowser.open(open_string, new = 1)
     
